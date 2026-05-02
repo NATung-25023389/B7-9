@@ -1,0 +1,35 @@
+name: Automated Code Review
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Quan trọng để bot có quyền comment vào PR
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Tests and Checkstyle
+        run: mvn clean verify
+
+      # Tích hợp Inline Feedback
+      - name: Checkstyle Review
+        uses: dbelyaev/action-checkstyle@master
+        if: failure() # Chỉ chạy nếu bước trước đó phát hiện lỗi
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          checkstyle_config: checkstyle.xml
+          level: error
